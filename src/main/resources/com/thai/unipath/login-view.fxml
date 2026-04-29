@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<VBox alignment="CENTER" spacing="20.0" style="-fx-background-color: white; -fx-background-radius: 15; -fx-border-color: #d35400; -fx-border-radius: 15; -fx-border-width: 2;" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.thai.unipath.LoginController">
+    <children>
+        <Label text="QUẢN TRỊ VIÊN" textFill="#d35400">
+            <font><Font name="System Bold" size="22.0" /></font>
+        </Label>
+        <VBox spacing="10.0">
+            <children>
+                <Label text="Tên đăng nhập" textFill="#34495e">
+                    <font><Font name="System Bold" size="13.0" /></font>
+                </Label>
+                <TextField fx:id="txtUser" prefHeight="40.0" promptText="Nhập tài khoản admin..." style="-fx-background-radius: 8;" />
+                <Label text="Mật khẩu" textFill="#34495e">
+                    <font><Font name="System Bold" size="13.0" /></font>
+                    <VBox.margin><Insets top="10.0" /></VBox.margin>
+                </Label>
+                <PasswordField fx:id="txtPass" prefHeight="40.0" promptText="Nhập mật khẩu..." style="-fx-background-radius: 8;" />
+            </children>
+        </VBox>
+        <Button fx:id="btnLogin" maxWidth="Infinity" onAction="#onLoginClick" prefHeight="45.0" style="-fx-background-color: #d35400; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: hand;" text="ĐĂNG NHẬP" />
+        <Label onMouseClicked="#onBackClick" style="-fx-cursor: hand;" text="Quay lại cổng tra cứu" textFill="#7f8c8d" />
+    </children>
+    <padding>
+        <Insets bottom="40.0" left="40.0" right="40.0" top="40.0" />
+    </padding>
+</VBox>

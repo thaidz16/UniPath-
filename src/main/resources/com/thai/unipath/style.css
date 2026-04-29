@@ -1,0 +1,62 @@
+/* 1. Tắt viền xanh cho mọi thứ trong TabPane */
+.tab-pane,
+.tab-pane .tab,
+.tab-pane .tab-content-area,
+.tab-pane .tab:focused,
+.tab-pane .tab-label:focused {
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+/* 2. Triệt hạ viền xanh cho tất cả các nút và ô nhập liệu nếu cần */
+.button:focused,
+.text-field:focused,
+.combo-box:focused {
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+
+.tab-pane .tab-header-area .tab-header-background {
+    -fx-background-color: #e9ecef;
+}
+
+.tab-pane .tab {
+    -fx-background-color: #f4f6f9;
+    -fx-border-color: #ced4da;
+    -fx-border-width: 1 1 0 1;
+    -fx-padding: 8 20;
+    -fx-cursor: hand;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+}
+
+.tab-pane .tab .tab-label {
+    -fx-text-fill: #555555;
+    -fx-font-weight: bold;
+}
+
+.tab-pane .tab .svg-path {
+    -fx-fill: #555555;
+}
+
+.tab-pane .tab:selected {
+    -fx-background-color: white;
+    -fx-border-color: #d35400 #ced4da white #ced4da;
+    -fx-border-width: 3 1 1 1;
+}
+
+.tab-pane .tab:selected .tab-label {
+    -fx-text-fill: #555555;
+    -fx-font-weight: bold;
+}
+
+.tab-pane .tab:selected .svg-path {
+    -fx-fill: #d35400;
+}
+
+.tab-pane *.tab-content-area {
+    -fx-background-color: white;
+    -fx-border-color: #ced4da;
+    -fx-border-width: 0 1 1 1;
+}
