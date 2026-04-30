@@ -3,7 +3,7 @@ module com.thai.unipath {
     requires javafx.fxml;
     requires java.desktop;
     requires com.google.gson;
-    opens com.thai.unipath to javafx.fxml, com.google.gson;
+    opens com.thai.unipath to javafx.fxml, com.google.gson,dev.langchain4j;
 
     requires org.controlsfx.controls;
     requires net.synedra.validatorfx;
@@ -17,7 +17,7 @@ module com.thai.unipath {
     exports com.thai.unipath;
     exports com.thai.unipath.model;
     exports com.thai.unipath.service;
-    opens com.thai.unipath.service to com.google.gson, javafx.fxml;
+    opens com.thai.unipath.service;
     requires langchain4j;
     requires langchain4j.core;
     requires langchain4j.google.ai.gemini;

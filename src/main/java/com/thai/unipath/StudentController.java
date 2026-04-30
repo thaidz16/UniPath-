@@ -45,7 +45,7 @@ import javafx.scene.layout.VBox;
 
 public class StudentController {
 
-    // ================= KHAI BÁO UI COMPONENTS =================
+    //  KHAI BÁO UI COMPONENT
     @FXML private Label lblDate, lblHoTen, lblNgaySinh, lblQueQuan, lblTongDiem, lblDiemChiTiet, lblBadge, lblTitleGoiY;
     @FXML private TextField txtSBD, txtSearchTruong;
     @FXML private VBox resultArea, viewTraCacDiem, viewTraDaiHoc, suggestionBox, listTruongGoiY;
@@ -62,7 +62,7 @@ public class StudentController {
     @FXML private VBox chatWindow;
     @FXML private Button btnCallBot;
 
-    // --- UI TAB 3 (TÌM THEO ĐIỂM) ---
+    // UI TAB 3 (TÌM THEO ĐIỂM)
     @FXML private TextField txtDiemMin, txtDiemMax, txtSearchDiem;
     @FXML private Slider sliderDiemMin, sliderDiemMax;
     @FXML private ComboBox<String> cbKhuVucDiem, cbHeDiem, cbKhoiDiem, cbNhomDiem, cbSortDiem;
@@ -71,7 +71,7 @@ public class StudentController {
     @FXML private ListView<String> listNhomNganh;
     @FXML private TableView<NganhHoc> tableNganhChiTiet;
 
-    // --- UI TAB 4 (TÌM THEO HỌC PHÍ) ---
+    //  UI TAB 4 (TÌM THEO HỌC PHÍ)
     @FXML private TextField txtHpMin, txtHpMax, txtSearchHp;
     @FXML private Slider sliderHpMin, sliderHpMax;
     @FXML private ComboBox<String> cbKhuVucHp, cbHeHp, cbKhoiHp, cbNhomHp, cbSortHp;
@@ -99,7 +99,7 @@ public class StudentController {
         btnCallBot.setVisible(!isNowVisible);
     }
 
-    // ================= DATA CLASSES =================
+    // DATA CLASSES
     public static class TruongDH {
         String ma, ten, khuVuc, diaChi, sdt, web, trangThai, mauTrangThai, heDaoTao;
         List<String> nganhDaoTao;
@@ -128,8 +128,12 @@ public class StudentController {
     @FXML
     public void initialize() {
         danhSachThiSinh = dataService.readData("DuLieu.xlsx");
-        lblDate.setText(LocalDate.now().format(DateTimeFormatter.ofPattern("'Thứ Tư, ' dd/MM/yyyy")));
-        Gson gson = new Gson();
+        LocalDate now = LocalDate.now();
+        String thu = switch (now.getDayOfWeek()) {
+            case MONDAY -> "Thứ Hai"; case TUESDAY -> "Thứ Ba"; case WEDNESDAY -> "Thứ Tư";
+            case THURSDAY -> "Thứ Năm"; case FRIDAY -> "Thứ Sáu"; case SATURDAY -> "Thứ Bảy"; case SUNDAY -> "Chủ Nhật";
+        };
+        lblDate.setText(thu + ", " + now.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));        Gson gson = new Gson();
 
         try (Reader reader = new FileReader("truong_dai_hoc.json")) {
             Type listType = new TypeToken<ArrayList<TruongDH>>(){}.getType();
@@ -147,7 +151,7 @@ public class StudentController {
         setupTabHocPhi();
     }
 
-    // ================= HELPER CHUNG TẠO CỘT BẢNG =================
+    // Helped
     private void initTableColumns(TableView<LocResult> table) {
         TableColumn<LocResult, Integer> colStt = new TableColumn<>("STT");
         colStt.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue().stt)); colStt.setPrefWidth(50);
@@ -170,14 +174,6 @@ public class StudentController {
         table.getColumns().addAll(colStt, colNganh, colDiem, colKhoi, colHocPhi, colTruong);
     }
 
-    private double getHocPhiGiagia(String tenTruong) {
-        String t = tenTruong.toLowerCase();
-        if (t.contains("fpt") || t.contains("rmit")) return 45.0;
-        if (t.contains("phenikaa") || t.contains("thăng long")) return 25.0;
-        if (t.contains("y hà nội") || t.contains("y dược")) return 50.0;
-        return 15.0;
-    }
-
     private String getKhuVucNhanh(String tenTruong) {
         String t = tenTruong.toLowerCase();
         if(t.contains("hcm") || t.contains("tp.hcm")) return "TP HCM";
@@ -185,7 +181,7 @@ public class StudentController {
         return "Hà Nội";
     }
 
-    // ================= TAB 3: TÌM THEO ĐIỂM =================
+    // Tìm theo điểm
     private void setupTabDiem() {
         if(tableDiem == null) return;
         initTableColumns(tableDiem);
@@ -226,8 +222,7 @@ public class StudentController {
             if(n.tenTruong != null) {
                 String truong = n.tenTruong;
                 if(!"Tất cả".equals(kv) && !getKhuVucNhanh(truong).equals(kv)) continue;
-                list.add(new LocResult(0, n.tenNganh + "\n" + n.maNganh, n.diemChuan, n.khoi != null ? n.khoi : "", getHocPhiGiagia(truong), truong));
-            }
+                list.add(new LocResult(0, n.tenNganh + "\n" + n.maNganh, n.diemChuan, n.khoi != null ? n.khoi : "", n.hocPhi, truong));            }
         }
 
         if("Điểm chuẩn thấp -> cao".equals(cbSortDiem.getValue())) list.sort((a,b) -> Double.compare(a.diem, b.diem));
@@ -239,7 +234,6 @@ public class StudentController {
         tableDiem.setItems(FXCollections.observableArrayList(list));
     }
 
-    // ================= TAB 4: TÌM THEO HỌC PHÍ =================
     private void setupTabHocPhi() {
         if(tableHp == null) return;
         initTableColumns(tableHp);
@@ -279,7 +273,7 @@ public class StudentController {
             if(n.tenTruong != null) {
                 String truong = n.tenTruong;
                 if(!"Tất cả".equals(kv) && !getKhuVucNhanh(truong).equals(kv)) continue;
-                double hp = getHocPhiGiagia(truong);
+                double hp = n.hocPhi;
                 if(hp >= min && hp <= max) {
                     list.add(new LocResult(0, n.tenNganh + "\n" + n.maNganh, n.diemChuan, n.khoi != null ? n.khoi : "", hp, truong));
                 }
@@ -296,7 +290,6 @@ public class StudentController {
     }
 
 
-    // ================= TAB 1 & TAB 2 (CŨ GIỮ NGUYÊN BÊN TRƯỚC) =================
     private void setupTabTruong() {
         btnKhuVucDangChon = btnHN;
         triggerFilterTruong();
@@ -324,8 +317,22 @@ public class StudentController {
                 if (keyword.isEmpty() || t.ten.toLowerCase().contains(keyword) || t.ma.toLowerCase().contains(keyword)) {
                     TitledPane tp = new TitledPane(); tp.setText("[" + t.ma + "] " + t.ten); tp.setTextFill(Color.web("#d35400")); tp.setFont(Font.font("System", FontWeight.BOLD, 15));
                     VBox content = new VBox(8); content.setStyle("-fx-background-color: #fdfefe; -fx-padding: 15; -fx-border-color: #ecf0f1; -fx-border-width: 0 1 1 1;");
-                    content.getChildren().addAll(new Label("📍 Địa chỉ: " + t.diaChi), new Label("📞 Điện thoại: " + t.sdt), new Label("🌐 Website: " + t.web));
-                    if (t.nganhDaoTao != null && !t.nganhDaoTao.isEmpty()) {
+                    Label lblTrangThai = new Label(t.trangThai);
+
+                    lblTrangThai.setStyle("-fx-background-color: " + t.mauTrangThai +
+                            "; -fx-text-fill: white;" +
+                            " -fx-font-size: 11px;" +
+                            " -fx-font-weight: bold;" +
+                            " -fx-padding: 3 8;" +
+                            " -fx-background-radius: 10;");
+
+                    boxTitleSearch.getChildren().add(lblTrangThai);
+                    content.getChildren().addAll(
+                            new Label("📍 Địa chỉ: " + t.diaChi),
+                            new Label("📞 Điện thoại: " + t.sdt),
+                            new Label("🌐 Website: " + t.web),
+                            lblTrangThai
+                    );                    if (t.nganhDaoTao != null && !t.nganhDaoTao.isEmpty()) {
                         content.getChildren().add(new Separator()); Label lblNganhTitle = new Label("📚 Các ngành đào tạo nổi bật:"); lblNganhTitle.setTextFill(Color.web("#e67e22")); lblNganhTitle.setFont(Font.font("System", FontWeight.BOLD, 14)); content.getChildren().add(lblNganhTitle);
                         for (String nganh : t.nganhDaoTao) { Label lblNganh = new Label("   • " + nganh); lblNganh.setTextFill(Color.web("#34495e")); content.getChildren().add(lblNganh); }
                     }
@@ -431,7 +438,6 @@ public class StudentController {
         }
     }
 
-    // ================= CÁC SỰ KIỆN CHUYỂN MENU & MXH =================
     @FXML
     protected void switchViewToTraDiem() {
         viewTraCacDiem.setVisible(true); viewTraCacDiem.setManaged(true);
@@ -525,19 +531,16 @@ public class StudentController {
                 String traLoi = uniBot.hoiBot(cauHoi);
 
                 Platform.runLater(() -> {
-                    // Xóa cái bong bóng "Đang suy nghĩ..." (là cái cuối cùng trong list)
                     int lastIndex = boxChatHistory.getChildren().size() - 1;
                     if (lastIndex >= 0) boxChatHistory.getChildren().remove(lastIndex);
 
-                    // In câu trả lời thật của Bot (Bên trái - Màu tối)
                     themBongBongChat(traLoi, false);
                 });
             } catch (Exception e) {
-                e.printStackTrace(); // In lỗi ra Console để sếp đọc bệnh
                 Platform.runLater(() -> {
                     int lastIndex = boxChatHistory.getChildren().size() - 1;
                     if (lastIndex >= 0) boxChatHistory.getChildren().remove(lastIndex);
-                    themBongBongChat("❌ Lỗi mạng hoặc API Key. Sếp check lại console nhé!", false);
+                    themBongBongChat("❌ Lỗi không lấy được dữ liệu", false);
                 });
             }
         }).start();
@@ -550,7 +553,6 @@ public class StudentController {
         Diem d = ts.getDiemThi();
         if (d == null) return;
 
-        // LỌC MÔN TÀNG HÌNH (0 ĐIỂM THÌ BAY MÀU)
         StringBuilder sb = new StringBuilder();
         java.util.Map<String, Double> mapDiem = new java.util.LinkedHashMap<>();
         mapDiem.put("Toán", d.getToan()); mapDiem.put("Văn", d.getVan()); mapDiem.put("Anh", d.getAnh());
@@ -566,7 +568,6 @@ public class StudentController {
         });
         if (lblDiemChiTiet != null) lblDiemChiTiet.setText(sb.toString());
 
-        // RENDER KHỐI ĐỘNG CỰC XỊN
         boxKhoi.getChildren().clear();
         List<String> khoiHopLe = xacDinhKhoi(d);
 
@@ -713,18 +714,27 @@ public class StudentController {
         listTruongGoiY.getChildren().clear();
         suggestionBox.setVisible(score > 0);
 
-        if (score >= 27.0) {
-            lblTitleGoiY.setText("🎉 Xuất sắc! Khối " + k + " vào thẳng TOP 1:");
-            listTruongGoiY.getChildren().add(new Label("🎓 ĐH Bách Khoa HN (HUST)"));
-            listTruongGoiY.getChildren().add(new Label("🎓 ĐH Công Nghệ - ĐHQGHN (UET)"));
-        } else if (score >= 24.0) {
-            lblTitleGoiY.setText("🌟 Rất tốt! Khối " + k + " vào TOP 2 an toàn:");
-            listTruongGoiY.getChildren().add(new Label("🎓 ĐH Phenikaa (PKA) - Cơ hội Học bổng"));
-            listTruongGoiY.getChildren().add(new Label("🎓 Học viện Bưu chính Viễn thông (PTIT)"));
+        lblTitleGoiY.setText("🎯 Gợi ý trường phù hợp khối " + k + " (Điểm chuẩn ≤ " + score + "):");
+
+        List<NganhHoc> nganhPhuHop = khoDuLieuNganh.stream()
+                .filter(n -> n.khoi != null && n.khoi.contains(k) && n.diemChuan <= score && n.diemChuan > 0)
+                .sorted((a, b) -> Double.compare(b.diemChuan, a.diemChuan)) // Ưu tiên xếp điểm cao lên trước
+                .collect(Collectors.toList());
+
+        List<String> truongGoiY = new ArrayList<>();
+        for (NganhHoc n : nganhPhuHop) {
+            if (n.tenTruong != null && !truongGoiY.contains(n.tenTruong)) {
+                truongGoiY.add(n.tenTruong);
+            }
+            if (truongGoiY.size() == 3) break;
+        }
+
+        if (truongGoiY.isEmpty()) {
+            listTruongGoiY.getChildren().add(new Label("😅 Chưa tìm thấy trường nào phù hợp trong hệ thống."));
         } else {
-            lblTitleGoiY.setText("👍 Khá ổn! Lựa chọn an toàn khối " + k + ":");
-            listTruongGoiY.getChildren().add(new Label("🎓 ĐH Thủy Lợi (TLU)"));
-            listTruongGoiY.getChildren().add(new Label("🎓 ĐH Công nghiệp HN (HAUI)"));
+            for (String truong : truongGoiY) {
+                listTruongGoiY.getChildren().add(new Label("🎓 " + truong));
+            }
         }
     }
 
