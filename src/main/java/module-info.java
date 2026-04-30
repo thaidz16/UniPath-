@@ -5,17 +5,20 @@ module com.thai.unipath {
     requires com.google.gson;
     opens com.thai.unipath to javafx.fxml, com.google.gson;
 
-    // Bộ đồ chơi UI xịn xò ông tích lúc đầu
     requires org.controlsfx.controls;
     requires net.synedra.validatorfx;
     requires org.kordamp.ikonli.javafx;
     requires org.kordamp.bootstrapfx.core;
 
-    // "Vũ khí" Apache POI để đọc/ghi file Excel
     requires org.apache.poi.poi;
     requires org.apache.poi.ooxml;
     requires org.apache.logging.log4j;
 
     exports com.thai.unipath;
-    exports com.thai.unipath.model; // Nhớ export model để giao diện đọc được dữ liệu
+    exports com.thai.unipath.model;
+    exports com.thai.unipath.service;
+    opens com.thai.unipath.service to com.google.gson, javafx.fxml;
+    requires langchain4j;
+    requires langchain4j.core;
+    requires langchain4j.google.ai.gemini;
 }

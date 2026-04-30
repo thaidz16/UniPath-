@@ -3,6 +3,7 @@ package com.thai.unipath;
 import com.thai.unipath.model.Diem;
 import com.thai.unipath.model.ThiSinh;
 import com.thai.unipath.service.ExcelServiceImpl;
+import com.thai.unipath.service.GeminiAgentService;
 import com.thai.unipath.service.IDataService;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -33,6 +34,14 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import javafx.application.Platform;
+import javafx.fxml.FXML;
+import javafx.geometry.Pos;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 
 public class StudentController {
 
@@ -46,7 +55,12 @@ public class StudentController {
     @FXML private Accordion accordionTruong, accordionNganh;
     @FXML private RadioButton rbDaiHoc, rbCaoDang;
     @FXML private Button btnLoginAdmin;
-    @FXML private VBox boxTitleSearch; // Khai báo biến đẩy tiêu đề ở đây
+    @FXML private ScrollPane scrollChat;
+    @FXML private VBox boxChatHistory;
+    @FXML private TextField txtChatInput;
+    @FXML private VBox boxTitleSearch;
+    @FXML private VBox chatWindow;
+    @FXML private Button btnCallBot;
 
     // --- UI TAB 3 (TÌM THEO ĐIỂM) ---
     @FXML private TextField txtDiemMin, txtDiemMax, txtSearchDiem;
@@ -78,6 +92,12 @@ public class StudentController {
             e.printStackTrace();
         }
     }
+    @FXML
+    protected void toggleChatWindow() {
+        boolean isNowVisible = !chatWindow.isVisible();
+        chatWindow.setVisible(isNowVisible);
+        btnCallBot.setVisible(!isNowVisible);
+    }
 
     // ================= DATA CLASSES =================
     public static class TruongDH {
@@ -103,8 +123,8 @@ public class StudentController {
     private IDataService dataService = new ExcelServiceImpl();
     private List<ThiSinh> danhSachThiSinh;
     private DecimalFormat moneyFormat = new DecimalFormat("#,### VNĐ");
+    private GeminiAgentService uniBot = new GeminiAgentService();
 
-    // ================= HÀM KHỞI TẠO =================
     @FXML
     public void initialize() {
         danhSachThiSinh = dataService.readData("DuLieu.xlsx");
@@ -465,8 +485,62 @@ public class StudentController {
         } else {
             if (boxTitleSearch != null) boxTitleSearch.setStyle("-fx-padding: 150 0 0 0;");
             resultArea.setVisible(false);
-            showAlert("Không tìm thấy", "Số báo danh không tồn tại trong hệ thống.");
+            showAlert("Không tìm thấy", "Số báo danh không tồn tại trong hệ thống.");        }
+    }
+    private void themBongBongChat(String noiDung, boolean laNguoiDung) {
+        Label lblChat = new Label(noiDung);
+        lblChat.setWrapText(true);
+        lblChat.setMaxWidth(260);
+        if (laNguoiDung) {
+            lblChat.setStyle("-fx-background-color: #2563eb; -fx-text-fill: white; -fx-padding: 10 15; -fx-background-radius: 15 15 0 15; -fx-font-size: 14px;");
+        } else {
+            lblChat.setStyle("-fx-background-color: #2c3e50; -fx-text-fill: white; -fx-padding: 10 15; -fx-background-radius: 15 15 15 0; -fx-font-size: 14px;");
         }
+
+        HBox chatRow = new HBox(lblChat);
+        chatRow.setAlignment(laNguoiDung ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+
+        // 4. Đẩy lên UI và cuộn xuống dòng cuối cùng
+        Platform.runLater(() -> {
+            boxChatHistory.getChildren().add(chatRow);
+            scrollChat.layout();
+            scrollChat.setVvalue(1.0); // Cuộn mượt mà xuống đáy
+        });
+    }
+
+    @FXML
+    protected void onSendChatClick() {
+        String cauHoi = txtChatInput.getText().trim();
+        if (cauHoi.isEmpty()) return;
+
+        // In câu hỏi của người dùng (Bên phải - Màu xanh)
+        themBongBongChat(cauHoi, true);
+        txtChatInput.clear();
+
+        // Thêm một bong bóng ảo báo hiệu Bot đang gõ
+        themBongBongChat("🤖 Đang suy nghĩ...", false);
+
+        new Thread(() -> {
+            try {
+                String traLoi = uniBot.hoiBot(cauHoi);
+
+                Platform.runLater(() -> {
+                    // Xóa cái bong bóng "Đang suy nghĩ..." (là cái cuối cùng trong list)
+                    int lastIndex = boxChatHistory.getChildren().size() - 1;
+                    if (lastIndex >= 0) boxChatHistory.getChildren().remove(lastIndex);
+
+                    // In câu trả lời thật của Bot (Bên trái - Màu tối)
+                    themBongBongChat(traLoi, false);
+                });
+            } catch (Exception e) {
+                e.printStackTrace(); // In lỗi ra Console để sếp đọc bệnh
+                Platform.runLater(() -> {
+                    int lastIndex = boxChatHistory.getChildren().size() - 1;
+                    if (lastIndex >= 0) boxChatHistory.getChildren().remove(lastIndex);
+                    themBongBongChat("❌ Lỗi mạng hoặc API Key. Sếp check lại console nhé!", false);
+                });
+            }
+        }).start();
     }
 
     private void hienThiKetQua(ThiSinh ts) {
