@@ -13,10 +13,15 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.chart.BarChart;
+import javafx.scene.chart.PieChart;
+import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.TextFieldTableCell;
+import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 
 import java.io.FileReader;
@@ -35,8 +40,17 @@ public class AdminController {
     @FXML private TableView tableAdmin;
     @FXML private TextField fMa, fTen, fKhuVuc, fHe, fWeb;
     @FXML private Label lblHeaderTitle;
-    @FXML private Button btnMenuTruong, btnMenuNganh, btnMenuThiSinh;
+    @FXML private Button btnMenuTruong, btnMenuNganh, btnMenuThiSinh, btnMenuThongKe;
     @FXML private TitledPane paneEditForm;
+    @FXML private Button btnSaveAll;
+
+    // UI Panels để Swap
+    @FXML private VBox viewData, viewThongKe;
+
+    @FXML private TextField txtSearchAdmin;
+    @FXML private PieChart pieChartThongKe;
+    @FXML private BarChart<String, Number> barChartDiemMon;
+    @FXML private ComboBox<String> cbMonThongKe;
 
     private final String FILE_TRUONG = "truong_dai_hoc.json";
     private final String FILE_NGANH = "nganh_hoc.json";
@@ -57,18 +71,46 @@ public class AdminController {
     @FXML
     public void initialize() {
         tableAdmin.setEditable(true);
-        btnMenuNganh.fire(); // Ưu tiên load tab Ngành lên trước để test bản đại phẫu
+
+        // Nạp danh sách môn học vào ComboBox Thống Kê
+        if (cbMonThongKe != null) {
+            cbMonThongKe.getItems().addAll("Toán", "Văn", "Anh", "Lý", "Hóa", "Sinh", "Sử", "Địa", "Tin", "GDKT", "C.Nghệ");
+            cbMonThongKe.getSelectionModel().selectFirst();
+            cbMonThongKe.valueProperty().addListener((obs, oldVal, newVal) -> {
+                if (newVal != null) vePhoDiemMon(newVal);
+            });
+        }
+
+        List<ThiSinh> list = excelService.readData("DuLieu.xlsx");
+        listThiSinh.setAll(list);
+        btnMenuThiSinh.fire();
     }
 
     @FXML
     protected void onMenuClick(ActionEvent event) {
         Button btn = (Button) event.getSource();
         String styleOff = "-fx-background-color: transparent; -fx-text-fill: #bdc3c7; -fx-alignment: CENTER_LEFT; -fx-font-weight: bold; -fx-cursor: hand;";
-        btnMenuTruong.setStyle(styleOff); btnMenuNganh.setStyle(styleOff); btnMenuThiSinh.setStyle(styleOff);
+        btnMenuTruong.setStyle(styleOff); btnMenuNganh.setStyle(styleOff);
+        btnMenuThiSinh.setStyle(styleOff); btnMenuThongKe.setStyle(styleOff);
         btn.setStyle("-fx-background-color: #e67e22; -fx-text-fill: white; -fx-alignment: CENTER_LEFT; -fx-font-weight: bold; -fx-cursor: hand;");
 
         String text = btn.getText();
         clearForm();
+        if(txtSearchAdmin != null) txtSearchAdmin.clear();
+
+        // Xử lý chuyển đổi View
+        if (text.contains("Thống kê")) {
+            viewData.setVisible(false); viewData.setManaged(false);
+            viewThongKe.setVisible(true); viewThongKe.setManaged(true);
+            btnSaveAll.setVisible(false); // Tab thống kê thì giấu nút Lưu đi
+            lblHeaderTitle.setText("📊 Bảng Điều Khiển Thống Kê & Báo Cáo");
+            loadBieuDoThongKe();
+            return;
+        } else {
+            viewData.setVisible(true); viewData.setManaged(true);
+            viewThongKe.setVisible(false); viewThongKe.setManaged(false);
+            btnSaveAll.setVisible(true);
+        }
 
         if (text.contains("Trường")) {
             paneEditForm.setText("Cập nhật thông tin (Dành cho Trường Đại học)");
@@ -90,7 +132,7 @@ public class AdminController {
             paneEditForm.setText("Thêm Thí Sinh Mới (Tạo hồ sơ trước, nhập điểm trực tiếp trên bảng)");
             fMa.setPromptText("Số Báo Danh"); fTen.setPromptText("Họ và Tên");
             fKhuVuc.setPromptText("Ngày sinh (YYYY-MM-DD)");
-            fHe.setPromptText("Quê Quán "); fWeb.setPromptText("<< Không dùng >>");
+            fHe.setPromptText("Quê Quán"); fWeb.setPromptText("<< Không dùng >>");
             fHe.setDisable(false); fWeb.setDisable(true);
             showQuanLyThiSinh();
         }
@@ -107,16 +149,26 @@ public class AdminController {
         addEditableStrCol("Khu Vực", t -> ((TruongDH)t).khuVuc, (t, v) -> ((TruongDH)t).khuVuc = v, 150);
         addEditableStrCol("Hệ ĐT", t -> ((TruongDH)t).heDaoTao, (t, v) -> ((TruongDH)t).heDaoTao = v, 100);
         addEditableStrCol("Website", t -> ((TruongDH)t).web, (t, v) -> ((TruongDH)t).web = v, 200);
+
         try (FileReader r = new FileReader(FILE_TRUONG)) {
             List<TruongDH> data = new Gson().fromJson(r, new TypeToken<ArrayList<TruongDH>>(){}.getType());
             if (data != null) listTruong.setAll(data);
-            tableAdmin.setItems(listTruong);
+
+            FilteredList<TruongDH> filteredTruong = new FilteredList<>(listTruong, b -> true);
+            txtSearchAdmin.textProperty().addListener((obs, oldV, newV) -> {
+                filteredTruong.setPredicate(t -> {
+                    if (newV == null || newV.isEmpty()) return true;
+                    String filter = newV.toLowerCase();
+                    return (t.ten != null && t.ten.toLowerCase().contains(filter)) ||
+                            (t.ma != null && t.ma.toLowerCase().contains(filter));
+                });
+            });
+            tableAdmin.setItems(filteredTruong);
         } catch (Exception e) {}
     }
 
-    // --- SAU ĐẠI PHẪU: BẢNG NGÀNH GIỜ CÓ ĐỦ MÃ, TÊN TRƯỜNG, HỌC PHÍ ---
     private void showQuanLyNganh() {
-        lblHeaderTitle.setText("💼 Quản lý Ngành & Điểm chuẩn (Đại phẫu thuật)");
+        lblHeaderTitle.setText("💼 Quản lý Ngành & Điểm chuẩn");
         tableAdmin.getColumns().clear();
 
         addSTTColumn();
@@ -130,18 +182,27 @@ public class AdminController {
         try (FileReader r = new FileReader(FILE_NGANH)) {
             List<NganhHoc> data = new Gson().fromJson(r, new TypeToken<ArrayList<NganhHoc>>(){}.getType());
             if (data != null) {
-                // Gom chung các Ngành giống nhau vào một cụm
                 data.sort(Comparator.comparing(n -> n.nhomNganh != null ? n.nhomNganh : ""));
                 listNganh.setAll(data);
             }
-            tableAdmin.setItems(listNganh);
+
+            FilteredList<NganhHoc> filteredNganh = new FilteredList<>(listNganh, b -> true);
+            txtSearchAdmin.textProperty().addListener((obs, oldV, newV) -> {
+                filteredNganh.setPredicate(n -> {
+                    if (newV == null || newV.isEmpty()) return true;
+                    String filter = newV.toLowerCase();
+                    return (n.tenNganh != null && n.tenNganh.toLowerCase().contains(filter)) ||
+                            (n.maNganh != null && n.maNganh.toLowerCase().contains(filter)) ||
+                            (n.tenTruong != null && n.tenTruong.toLowerCase().contains(filter));
+                });
+            });
+            tableAdmin.setItems(filteredNganh);
         } catch (Exception e) {}
     }
 
     private void showQuanLyThiSinh() {
-        lblHeaderTitle.setText("👤 Quản lý Hồ sơ & Sửa Điểm Thí sinh (Excel)");
+        lblHeaderTitle.setText("👤 Quản lý Hồ sơ & Sửa Điểm Thí sinh");
         tableAdmin.getColumns().clear();
-
         tableAdmin.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
 
         addSTTColumn();
@@ -163,9 +224,103 @@ public class AdminController {
         addEditableDoubleCol("Tin", t -> getScore((ThiSinh)t, Diem::getTin), (t, v) -> setScore((ThiSinh)t, Diem::setTin, v), 60);
         addEditableDoubleCol("C.Nghệ", t -> getScore((ThiSinh)t, Diem::getCongNghe), (t, v) -> setScore((ThiSinh)t, Diem::setCongNghe, v), 60);
 
-        List<ThiSinh> list = excelService.readData("DuLieu.xlsx");
-        listThiSinh.setAll(list);
-        tableAdmin.setItems(listThiSinh);
+        FilteredList<ThiSinh> filteredThiSinh = new FilteredList<>(listThiSinh, b -> true);
+        txtSearchAdmin.textProperty().addListener((obs, oldV, newV) -> {
+            filteredThiSinh.setPredicate(ts -> {
+                if (newV == null || newV.isEmpty()) return true;
+                String filter = newV.toLowerCase();
+                if (ts.getHoTen() != null && ts.getHoTen().toLowerCase().contains(filter)) return true;
+                if (ts.getSbd() != null && ts.getSbd().toLowerCase().contains(filter)) return true;
+                if (ts.getQueQuan() != null && ts.getQueQuan().toLowerCase().contains(filter)) return true;
+                return false;
+            });
+        });
+        tableAdmin.setItems(filteredThiSinh);
+    }
+
+    private void loadBieuDoThongKe() {
+        if (pieChartThongKe == null) return;
+        int mucXuatSac = 0, mucKhaGioi = 0, mucTrungBinh = 0;
+
+        for (ThiSinh ts : listThiSinh) {
+            Diem d = ts.getDiemThi();
+            if (d == null) continue;
+
+            double tongDiem = 0;
+            if (d.getToan() != null && d.getToan() > 0) tongDiem += d.getToan();
+            if (d.getVan() != null && d.getVan() > 0)   tongDiem += d.getVan();
+            if (d.getAnh() != null && d.getAnh() > 0)   tongDiem += d.getAnh();
+            if (d.getLy() != null && d.getLy() > 0)     tongDiem += d.getLy();
+            if (d.getHoa() != null && d.getHoa() > 0)   tongDiem += d.getHoa();
+            if (d.getSinh() != null && d.getSinh() > 0) tongDiem += d.getSinh();
+            if (d.getSu() != null && d.getSu() > 0)     tongDiem += d.getSu();
+            if (d.getDia() != null && d.getDia() > 0)   tongDiem += d.getDia();
+            if (d.getTin() != null && d.getTin() > 0)   tongDiem += d.getTin();
+            if (d.getGdkt() != null && d.getGdkt() > 0) tongDiem += d.getGdkt();
+            if (d.getCongNghe() != null && d.getCongNghe() > 0) tongDiem += d.getCongNghe();
+
+            if (tongDiem >= 32) mucXuatSac++;
+            else if (tongDiem >= 20) mucKhaGioi++;
+            else if (tongDiem > 0) mucTrungBinh++;
+        }
+
+        pieChartThongKe.setData(FXCollections.observableArrayList(
+                new PieChart.Data("Xuất sắc (>= 32đ) - " + mucXuatSac, mucXuatSac),
+                new PieChart.Data("Khá Giỏi (20-31đ) - " + mucKhaGioi, mucKhaGioi),
+                new PieChart.Data("Trung bình (< 20đ) - " + mucTrungBinh, mucTrungBinh)
+        ));
+
+        if (cbMonThongKe != null && cbMonThongKe.getValue() != null) {
+            vePhoDiemMon(cbMonThongKe.getValue());
+        }
+    }
+
+    private void vePhoDiemMon(String mon) {
+        if (barChartDiemMon == null) return;
+        barChartDiemMon.getData().clear();
+
+        int dKem = 0, dYeu = 0, dTb = 0, dKha = 0, dGioi = 0, dXuatSac = 0;
+
+        for (ThiSinh ts : listThiSinh) {
+            Diem d = ts.getDiemThi();
+            if (d == null) continue;
+
+            Double score = null;
+            switch(mon) {
+                case "Toán": score = d.getToan(); break;
+                case "Văn": score = d.getVan(); break;
+                case "Anh": score = d.getAnh(); break;
+                case "Lý": score = d.getLy(); break;
+                case "Hóa": score = d.getHoa(); break;
+                case "Sinh": score = d.getSinh(); break;
+                case "Sử": score = d.getSu(); break;
+                case "Địa": score = d.getDia(); break;
+                case "Tin": score = d.getTin(); break;
+                case "GDKT": score = d.getGdkt(); break;
+                case "C.Nghệ": score = d.getCongNghe(); break;
+            }
+
+            if (score != null && score >= 0) {
+                if (score < 4.0) dKem++;
+                else if (score < 5.0) dYeu++;
+                else if (score < 7.0) dTb++;
+                else if (score < 8.0) dKha++;
+                else if (score < 9.0) dGioi++;
+                else dXuatSac++;
+            }
+        }
+
+        XYChart.Series<String, Number> series = new XYChart.Series<>();
+        series.setName("Phổ điểm môn: " + mon);
+
+        series.getData().add(new XYChart.Data<>("< 4 (Kém)", dKem));
+        series.getData().add(new XYChart.Data<>("4 - 5 (Yếu)", dYeu));
+        series.getData().add(new XYChart.Data<>("5 - 7 (TB)", dTb));
+        series.getData().add(new XYChart.Data<>("7 - 8 (Khá)", dKha));
+        series.getData().add(new XYChart.Data<>("8 - 9 (Giỏi)", dGioi));
+        series.getData().add(new XYChart.Data<>("9 - 10 (Xuất Sắc)", dXuatSac));
+
+        barChartDiemMon.getData().add(series);
     }
 
     private void addSTTColumn() {
@@ -246,6 +401,7 @@ public class AdminController {
 
             ts.setDiemThi(new Diem());
             listThiSinh.add(0, ts);
+            loadBieuDoThongKe();
         }
 
         clearForm();
@@ -254,7 +410,15 @@ public class AdminController {
 
     @FXML protected void onDelete() {
         Object selected = tableAdmin.getSelectionModel().getSelectedItem();
-        if (selected != null) tableAdmin.getItems().remove(selected);
+        if (selected != null) {
+            String title = lblHeaderTitle.getText();
+            if (title.contains("Trường")) listTruong.remove(selected);
+            else if (title.contains("Ngành")) listNganh.remove(selected);
+            else if (title.contains("Thí sinh")) {
+                listThiSinh.remove(selected);
+                loadBieuDoThongKe();
+            }
+        }
     }
 
     @FXML

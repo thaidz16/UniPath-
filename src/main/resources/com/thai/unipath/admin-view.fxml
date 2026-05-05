@@ -1,12 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.chart.BarChart?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.NumberAxis?>
+<?import javafx.scene.chart.PieChart?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.Font?>
 
 <AnchorPane prefHeight="750.0" prefWidth="1200.0" style="-fx-background-color: #f1f2f6;" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.thai.unipath.AdminController">
     <children>
+        <!-- SIDEBAR MENU -->
         <VBox prefWidth="240.0" style="-fx-background-color: #2c3e50;" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.topAnchor="0.0">
             <children>
                 <VBox alignment="CENTER" prefHeight="120.0" spacing="5.0" style="-fx-background-color: #d35400;">
@@ -17,7 +22,7 @@
                 </VBox>
                 <VBox spacing="10.0" style="-fx-padding: 25;">
                     <children>
-                        <Button fx:id="btnMenuTruong" maxWidth="Infinity" onAction="#onMenuClick" style="-fx-background-color: #e67e22; -fx-text-fill: white; -fx-alignment: CENTER_LEFT; -fx-cursor: hand;" text="🏫 Quản lý Trường">
+                        <Button fx:id="btnMenuTruong" maxWidth="Infinity" onAction="#onMenuClick" style="-fx-background-color: transparent; -fx-text-fill: #bdc3c7; -fx-alignment: CENTER_LEFT; -fx-cursor: hand;" text="🏫 Quản lý Trường">
                             <font><Font name="System Bold" size="14.0" /></font>
                         </Button>
                         <Button fx:id="btnMenuNganh" maxWidth="Infinity" onAction="#onMenuClick" style="-fx-background-color: transparent; -fx-text-fill: #bdc3c7; -fx-alignment: CENTER_LEFT; -fx-cursor: hand;" text="💼 Quản lý Ngành">
@@ -26,18 +31,27 @@
                         <Button fx:id="btnMenuThiSinh" maxWidth="Infinity" onAction="#onMenuClick" style="-fx-background-color: transparent; -fx-text-fill: #bdc3c7; -fx-alignment: CENTER_LEFT; -fx-cursor: hand;" text="👤 Quản lý Thí sinh">
                             <font><Font name="System Bold" size="14.0" /></font>
                         </Button>
-                        <Separator opacity="0.2" prefWidth="200.0"><VBox.margin><Insets bottom="15.0" top="15.0" /></VBox.margin></Separator>
+                        <Separator opacity="0.2" prefWidth="200.0"><VBox.margin><Insets bottom="10.0" top="10.0" /></VBox.margin></Separator>
+
+                        <!-- NÚT MENU THỐNG KÊ -->
+                        <Button fx:id="btnMenuThongKe" maxWidth="Infinity" onAction="#onMenuClick" style="-fx-background-color: transparent; -fx-text-fill: #bdc3c7; -fx-alignment: CENTER_LEFT; -fx-cursor: hand;" text="📊 Thống kê - Báo cáo">
+                            <font><Font name="System Bold" size="14.0" /></font>
+                        </Button>
+
+                        <Separator opacity="0.2" prefWidth="200.0"><VBox.margin><Insets bottom="10.0" top="10.0" /></VBox.margin></Separator>
                         <Button maxWidth="Infinity" onAction="#onLogout" style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;" text="ĐĂNG XUẤT" />
                     </children>
                 </VBox>
             </children>
         </VBox>
 
+        <!-- MAIN CONTENT AREA -->
         <VBox layoutX="240.0" prefHeight="750.0" prefWidth="960.0" spacing="15.0" style="-fx-padding: 20 30;" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="240.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
             <children>
+                <!-- HEADER BAR -->
                 <HBox alignment="CENTER_LEFT" spacing="20.0">
                     <children>
-                        <Label fx:id="lblHeaderTitle" text="Quản lý Danh sách Trường" textFill="#2c3e50">
+                        <Label fx:id="lblHeaderTitle" text="Quản lý Danh sách" textFill="#2c3e50">
                             <font><Font name="System Bold" size="26.0" /></font>
                         </Label>
                         <Region HBox.hgrow="ALWAYS" />
@@ -45,37 +59,90 @@
                     </children>
                 </HBox>
 
-                <TableView fx:id="tableAdmin" editable="true" prefHeight="380.0" style="-fx-text-background-color: #2c3e50; -fx-control-inner-background: white;" VBox.vgrow="ALWAYS" />
-
-                <TitledPane fx:id="paneEditForm" animated="false" collapsible="false" text="Cập nhật thông tin nhanh (Dành cho Trường / Ngành)" textFill="#2c3e50">
-                    <content>
-                        <GridPane hgap="20.0" vgap="15.0">
-                            <columnConstraints>
-                                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-                                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-                                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-                            </columnConstraints>
-                            <rowConstraints>
-                                <RowConstraints minHeight="10.0" prefHeight="35.0" vgrow="SOMETIMES" />
-                                <RowConstraints minHeight="10.0" prefHeight="35.0" vgrow="SOMETIMES" />
-                            </rowConstraints>
+                <!-- STACKPANE DÙNG ĐỂ CHUYỂN ĐỔI GIỮA DATA VÀ BIỂU ĐỒ -->
+                <StackPane VBox.vgrow="ALWAYS">
+                    <children>
+                        <!-- KHUNG 1: HIỂN THỊ DATA VÀ THÊM/SỬA/XÓA -->
+                        <VBox fx:id="viewData" spacing="15.0">
                             <children>
-                                <TextField fx:id="fMa" prefHeight="35.0" promptText="Mã (VD: PKA / 7480201)" />
-                                <TextField fx:id="fTen" prefHeight="35.0" promptText="Tên Trường / Ngành" GridPane.columnIndex="1" />
-                                <TextField fx:id="fKhuVuc" prefHeight="35.0" promptText="Khu vực / Điểm chuẩn" GridPane.columnIndex="2" />
-                                <TextField fx:id="fHe" prefHeight="35.0" promptText="Hệ đào tạo" GridPane.rowIndex="1" />
-                                <TextField fx:id="fWeb" prefHeight="35.0" promptText="Website / Khối thi" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                                <HBox alignment="CENTER_RIGHT" spacing="10.0" GridPane.columnIndex="2" GridPane.rowIndex="1">
+                                <HBox alignment="CENTER_LEFT" spacing="10.0">
                                     <children>
-                                        <Button onAction="#onAdd" prefHeight="35.0" prefWidth="80.0" style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;" text="THÊM" />
-                                        <Button onAction="#onDelete" prefHeight="35.0" prefWidth="80.0" style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;" text="XÓA" />
+                                        <Label text="🔍 Tìm kiếm:" textFill="#2c3e50">
+                                            <font><Font name="System Bold" size="14.0" /></font>
+                                        </Label>
+                                        <TextField fx:id="txtSearchAdmin" prefHeight="35.0" promptText="Gõ để lọc danh sách..." HBox.hgrow="ALWAYS" style="-fx-background-radius: 5; -fx-border-color: #bdc3c7; -fx-border-radius: 5;" />
+                                    </children>
+                                </HBox>
+
+                                <TableView fx:id="tableAdmin" editable="true" prefHeight="380.0" style="-fx-text-background-color: #2c3e50; -fx-control-inner-background: white;" VBox.vgrow="ALWAYS" />
+
+                                <TitledPane fx:id="paneEditForm" animated="false" collapsible="false" text="Cập nhật thông tin nhanh" textFill="#2c3e50">
+                                    <content>
+                                        <GridPane hgap="20.0" vgap="15.0">
+                                            <columnConstraints>
+                                                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                            </columnConstraints>
+                                            <rowConstraints>
+                                                <RowConstraints minHeight="10.0" prefHeight="35.0" vgrow="SOMETIMES" />
+                                                <RowConstraints minHeight="10.0" prefHeight="35.0" vgrow="SOMETIMES" />
+                                            </rowConstraints>
+                                            <children>
+                                                <TextField fx:id="fMa" prefHeight="35.0" promptText="Mã / SBD" />
+                                                <TextField fx:id="fTen" prefHeight="35.0" promptText="Tên / Họ Tên" GridPane.columnIndex="1" />
+                                                <TextField fx:id="fKhuVuc" prefHeight="35.0" promptText="Khu vực / Ngày Sinh" GridPane.columnIndex="2" />
+                                                <TextField fx:id="fHe" prefHeight="35.0" promptText="Hệ / Quê Quán" GridPane.rowIndex="1" />
+                                                <TextField fx:id="fWeb" prefHeight="35.0" promptText="Web / Khối" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                                <HBox alignment="CENTER_RIGHT" spacing="10.0" GridPane.columnIndex="2" GridPane.rowIndex="1">
+                                                    <children>
+                                                        <Button onAction="#onAdd" prefHeight="35.0" prefWidth="80.0" style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;" text="THÊM" />
+                                                        <Button onAction="#onDelete" prefHeight="35.0" prefWidth="80.0" style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;" text="XÓA" />
+                                                    </children>
+                                                </HBox>
+                                            </children>
+                                        </GridPane>
+                                    </content>
+                                    <font><Font name="System Bold" size="13.0" /></font>
+                                </TitledPane>
+                            </children>
+                        </VBox>
+
+                        <!-- KHUNG 2: HIỂN THỊ BIỂU ĐỒ THỐNG KÊ (Mặc định ẩn) -->
+                        <VBox fx:id="viewThongKe" alignment="CENTER" spacing="20.0" style="-fx-background-color: white; -fx-background-radius: 8; -fx-border-color: #bdc3c7; -fx-border-radius: 8; -fx-padding: 20;" visible="false" managed="false">
+                            <children>
+                                <Label text="BẢNG ĐIỀU KHIỂN THỐNG KÊ THÍ SINH" textFill="#2c3e50">
+                                    <font><Font name="System Bold" size="20.0" /></font>
+                                </Label>
+                                <HBox alignment="CENTER" spacing="30.0" VBox.vgrow="ALWAYS">
+                                    <children>
+                                        <!-- Biểu đồ Tròn tính tổng 4 môn -->
+                                        <PieChart fx:id="pieChartThongKe" prefHeight="400.0" prefWidth="380.0" title="Phân Loại Học Lực (Tổng 4 môn)" />
+
+                                        <!-- KHU VỰC BIỂU ĐỒ CỘT (CÓ CHỌN MÔN) -->
+                                        <VBox alignment="CENTER" spacing="10.0">
+                                            <HBox alignment="CENTER" spacing="10.0">
+                                                <Label text="🎯 Chọn môn xem phổ điểm:" textFill="#2c3e50">
+                                                    <font><Font name="System Bold" size="14.0" /></font>
+                                                </Label>
+                                                <ComboBox fx:id="cbMonThongKe" prefWidth="120.0" style="-fx-background-radius: 5; -fx-cursor: hand;" />
+                                            </HBox>
+
+                                            <BarChart fx:id="barChartDiemMon" prefHeight="360.0" prefWidth="540.0" title="Phổ Điểm Chi Tiết Môn Thi">
+                                                <xAxis>
+                                                    <CategoryAxis animated="false" label="Mức Điểm" />
+                                                </xAxis>
+                                                <yAxis>
+                                                    <NumberAxis autoRanging="true" label="Số lượng thí sinh" tickUnit="1" />
+                                                </yAxis>
+                                            </BarChart>
+                                        </VBox>
                                     </children>
                                 </HBox>
                             </children>
-                        </GridPane>
-                    </content>
-                    <font><Font name="System Bold" size="13.0" /></font>
-                </TitledPane>
+                        </VBox>
+                    </children>
+                </StackPane>
             </children>
         </VBox>
     </children>
