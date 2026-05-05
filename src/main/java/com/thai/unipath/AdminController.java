@@ -208,8 +208,20 @@ public class AdminController {
         addSTTColumn();
         addEditableStrCol("SBD", t -> ((ThiSinh)t).getSbd(), (t, v) -> ((ThiSinh)t).setSbd(v), 80);
         addEditableStrCol("Họ Tên", t -> ((ThiSinh)t).getHoTen(), (t, v) -> ((ThiSinh)t).setHoTen(v), 150);
-        addEditableStrCol("Ngày Sinh", t -> ((ThiSinh)t).getNgaySinh() != null ? ((ThiSinh)t).getNgaySinh().toString() : "",
-                (t, v) -> { try { ((ThiSinh)t).setNgaySinh(LocalDate.parse(v)); } catch(Exception e) {} }, 100);
+        addEditableStrCol("Ngày Sinh",
+                t -> ((ThiSinh)t).getNgaySinh() != null ? ((ThiSinh)t).getNgaySinh().toString() : "",
+                (t, v) -> {
+                    try {
+                        ((ThiSinh)t).setNgaySinh(LocalDate.parse(v.trim()));
+                    } catch(Exception e) {
+                        tableAdmin.refresh();
+                        Alert alert = new Alert(Alert.AlertType.ERROR);
+                        alert.setTitle("Lỗi nhập liệu");
+                        alert.setHeaderText("Sai định dạng ngày sinh!");
+                        alert.setContentText("Bắt buộc phải nhập theo định dạng YYYY-MM-DD\nVí dụ: 2005-08-25");
+                        alert.show();
+                    }
+                }, 100);
         addEditableStrCol("Quê Quán", t -> ((ThiSinh)t).getQueQuan(), (t, v) -> ((ThiSinh)t).setQueQuan(v), 120);
 
         addEditableDoubleCol("Toán", t -> getScore((ThiSinh)t, Diem::getToan), (t, v) -> setScore((ThiSinh)t, Diem::setToan, v), 60);

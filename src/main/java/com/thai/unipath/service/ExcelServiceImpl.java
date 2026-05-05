@@ -39,15 +39,19 @@ public class ExcelServiceImpl implements IDataService {
 
                 // Đọc Ngày sinh (Cột 2 + offset)
                 try {
-                    Cell dateCell = row.getCell(2 + offset);
-                    if (DateUtil.isCellDateFormatted(dateCell)) {
-                        ts.setNgaySinh(dateCell.getLocalDateTimeCellValue().toLocalDate());
-                    } else {
-                        String dateStr = getCellValue(dateCell);
-                        ts.setNgaySinh(LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("d/M/yy")));
+                    String dateStr = getCellValue(row.getCell(2 + offset)).trim();
+                    if (!dateStr.isEmpty()) {
+                        if (dateStr.contains("-")) {
+                            ts.setNgaySinh(LocalDate.parse(dateStr));
+                        } else if (dateStr.contains("/")) {
+                            java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("d/M/yyyy");
+                            ts.setNgaySinh(LocalDate.parse(dateStr, formatter));
+                        } else {
+                            ts.setNgaySinh(null);
+                        }
                     }
                 } catch (Exception e) {
-                    ts.setNgaySinh(LocalDate.of(2008, 1, 1)); // Ngày mặc định nếu lỗi
+                    ts.setNgaySinh(null);
                 }
 
                 // Đọc Quê quán (Cột 3 + offset)

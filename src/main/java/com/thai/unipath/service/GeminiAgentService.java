@@ -46,7 +46,7 @@ public class GeminiAgentService {
 
     public GeminiAgentService() {
         ChatLanguageModel model = GoogleAiGeminiChatModel.builder()
-                .apiKey("AIzaSyBev5MJVtgOI-FbQvBu6OLvDrVd1nS6Y8c")
+                .apiKey("AIzaSyB00M6qDSs37Vs4mMWPYcnMvzz-jm_OM40")
                 .modelName("gemini-2.5-flash")
                 .build();
 
